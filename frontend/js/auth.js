@@ -21,6 +21,11 @@ roleButtons.forEach(btn => {
   btn.addEventListener("click", () => {
     roleButtons.forEach(b => b.classList.remove("active"));
     btn.classList.add("active");
+  if(btn.textContent === "Examiner"){
+    window.location.href = "examiner_login.html"; 
+  } else if(btn.textContent === "examiner"){ 
+    window.location.href = "examiner_login.html"; 
+  }
   });
 });
 
@@ -45,5 +50,6 @@ loginBtn.addEventListener("click", () => {
   localStorage.setItem("studentName", username);
   window.location.href = "student_dashboard.html";
   
-  alert("Login Successful"); 
-});
+  alert("Login Successful");
+
+

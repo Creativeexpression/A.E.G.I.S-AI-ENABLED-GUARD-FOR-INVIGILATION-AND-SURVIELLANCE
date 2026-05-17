@@ -1,212 +1,201 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-<title>AI Invigilator - Teacher Dashboard</title>
-
-<link rel="stylesheet" href="css/teacher_dashboard.css">
-
+    <link rel="stylesheet" href="css/teacher_dashboard.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Online Test Admin Panel</title>
+    
 </head>
-
 <body>
 
-<!-- Sidebar -->
 
-<div class="sidebar">
-
-<h2>AI Invigilator</h2>
-
-<a href="#">Dashboard</a>
-<a href="#">Create Test</a>
-<a href="#">Manage Tests</a>
-<a href="#">Live Monitoring</a>
-<a href="#">Students</a>
-<a href="#">AI Reports</a>
-<a href="#">Security Logs</a>
-
-</div>
-
-<!-- Main Content -->
-
-<div class="main">
-
-<!-- Header -->
-
-<div class="header">
-
-<h1>Teacher Control Center</h1>
-<input placeholder="Search students">
-
-</div>
-
-<!-- Statistics Section -->
-
-<div class="cards">
-
-<div class="card">
-<h3>Active Exams</h3>
-<p id="activeExams">Loading...</p>
-</div>
-
-<div class="card">
-<h3>Students Appeared</h3>
-<p id="studentsAppeared">Loading...</p>
-</div>
-
-<div class="card">
-<h3>AI Alerts</h3>
-<p id="aiAlerts">Loading...</p>
-</div>
-
-<div class="card">
-<h3>AI Accuracy</h3>
-<p id="aiAccuracy">Loading...</p>
-</div>
-
-</div>
-
-<!-- Create Test -->
-
-<div class="card">
-
-<h3>Create New Test</h3>
-
-<input id="testName" placeholder="Test Name">
-<input id="testDuration" placeholder="Duration (minutes)">
-
-<button onclick="createTest()">Create</button>
-
-</div>
-
-<!-- Tests Management -->
-
-<div class="card">
-
-<h3>Tests Management</h3>
-
-<table>
-
-<thead>
-
-<tr>
-<th>Test Name</th>
-<th>Duration</th>
-<th>Actions</th>
-</tr>
-
-</thead>
-
-<tbody id="testTable">
-
-<tr>
-<td colspan="3" style="text-align:center;">Loading tests...</td>
-</tr>
-
-</tbody>
-
-</table>
-
-</div>
-
-<!-- Student Monitoring -->
-
-<div class="card">
-
-<h3>Student Progress</h3>
-
-<table>
-
-<thead>
-
-<tr>
-<th>Name</th>
-<th>Status</th>
-<th>Progress</th>
-<th>Risk</th>
-</tr>
-
-</thead>
-
-<tbody id="studentTable">
-
-<tr>
-<td colspan="4" style="text-align:center;">Loading student data...</td>
-</tr>
-
-</tbody>
-
-</table>
-
-</div>
-
-<!-- Live Webcam Monitoring -->
-
-<div class="card">
-
-<h3>Live Webcam Monitoring</h3>
-
-<div class="webcam-grid" id="webcamGrid">
-
-<div class="cam">Loading cameras...</div>
-
-</div>
-
-</div>
-
-<!-- AI Alerts -->
-
-<div class="alert-panel">
-
-<h3>AI Suspicious Activity</h3>
-
-<ul id="alerts">
-
-<li>Loading AI monitoring data...</li>
-
-</ul>
-
-</div>
-
-</div>
-
-<script>
-
-/* Create Test Placeholder */
-
-function createTest(){
-
-let name=document.getElementById("testName").value
-let duration=document.getElementById("testDuration").value
-
-if(name=="" || duration=="") return
-
-let table=document.getElementById("testTable")
-
-let row=document.createElement("tr")
-
-row.innerHTML=
-`
-<td>${name}</td>
-<td>${duration} min</td>
-<td><button onclick="deleteTest(this)">Delete</button></td>
-`
-
-table.appendChild(row)
-
-}
-
-/* Delete Test */
-
-function deleteTest(btn){
-btn.parentElement.parentElement.remove()
-}
-
-</script>
-
+    <!-- Main Container -->
+    <div class="container">
+        
+        <!-- 1. Sidebar Navigation -->
+        <nav class="sidebar">
+            <h2>Admin Panel</h2>
+            <ul>
+                <li><a href="#dashboard">Dashboard</a></li>
+                <li><a href="#generate-test">Generate Test</a></li>
+                <li><a href="#monitoring">Monitoring</a></li>
+                <li><a href="#scorecard">Scorecard</a></li>
+                <li><a href="#settings">Settings</a></li>
+            </ul>
+        </nav>
+
+        <!-- Main Content Area -->
+        <main class="content">
+
+            <!-- 2. Dashboard Section -->
+            <section id="dashboard" class="active">
+
+    <!-- Top Bar -->
+    <div class="top-bar">
+        <h1>Teacher Dashboard</h1>
+        <div class="accuracy-box">AI Accuracy:</div>
+    </div>
+
+    <!-- Stats -->
+    <div class="top-stats">
+        <div class="card">
+            <h3>Students Appeared</h3>
+            <p id="totalStudents">0</p>
+        </div>
+
+        <div class="card green">
+            <h3>Live Students</h3>
+            <p id="liveStudents">0</p>
+        </div>
+
+        <div class="card red">
+            <h3>AI Alerts (Cheating)</h3>
+            <p id="cheatingFlags">0</p>
+        </div>
+    </div>
+
+    <!-- Table -->
+    <div class="panel">
+        <h2>Student Progress & AI Risk</h2>
+
+        <table id="progressTable">
+            <thead>
+                <tr>
+                    <th>Student Name</th>
+                    <th>Status</th>
+                    <th>Progress</th>
+                    <th>Risk Level</th>
+                </tr>
+            </thead>
+
+            <tbody id="studentTableBody">
+                <tr>
+                    <td colspan="4" class="no-data">No data available</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Monitoring -->
+    <div class="panel">
+        <h2>Live Webcam Monitoring (AI Analysis)</h2>
+
+        <div class="grid" id="monitorGrid">
+            <!-- JS will fill -->
+        </div>
+    </div>
+
+</section>
+
+        <section id="generate-test" style="display: none;">
+            <h1>Generate Test</h1>
+                
+                <label>Test Title:</label><br>
+                <input type="text" id="testTitle" name="title"placeholder="Enter Test Name" required><br><br>
+                <!-- Question Form -->
+                <form id="testForm">   
+                
+                    <h3 id="questionTitle">Question 1:</h3>
+                    <textarea id="quesText" placeholder="Enter your question here" required></textarea>
+                    <br>
+                    <input type="text" id="opt1" placeholder="Option 1" required>
+                    <input type="text" id="opt2" placeholder="Option 2" required>
+                    <input type="text" id="opt3" placeholder="Option 3" required>
+                    <input type="text" id="opt4" placeholder="Option 4" required>
+
+                    <br><br>
+                    <button type="button" id="addQuestionBtn">Add Question</button>
+                </form>
+                <!--form end-->
+                    <button type="button" id="createTestBtn">Create Test</button>
+                    <p id="saveStatus"></p>
+            
+            </section>
+                  
+
+            <!-- 4. Monitoring Section (Cheating Detection) -->
+            <section id="monitoring" style="display: none;">
+    <h1>Live Monitoring</h1>
+    <div class="monitor-screen">
+        <p>Status: No active exams currently</p>
+    </div>
+</section>
+<section id="scorecard" style="display: none;">
+    <h1>Scorecard</h1>
+
+    <!-- Scorecard content will be dynamically populated -->
+    <div class="stats-cards">
+        <div class="card">Total Students: 0</div>
+        <div class="card">Average Score: 0%</div>
+        <div class="card">Highest Score: 0%</div>
+        <div class="card">Lowest Score: 0%</div>
+        <div class="card">Passed: 0</div>
+        <div class="card">Failed: 0</div>
+        <div class="card">Cheating Flags: 0</div>
+
+        <!--Table Panel-->
+        <div class="panel">
+            <h2>Student Results</h2>
+
+            <table id="scoreTable">
+                <thead id="scoreBody">
+                    <tr>
+                        <th>Student Name</th>
+                        <th>Test</th>
+                        <th>Score</th>
+                        <th>Status</th>
+                        <th>Cheating Flags</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    <tr>
+                        <td colspan="5" style="text-align: center; color: gray;">No results available yet</td>
+                    </tr>
+                </tbody>
+            </table >
+        </div>
+
+    </section>               
+       
+<section id="settings" style="display: none;">
+<h2>Test Settings & Security</h2>
+<form action="/save-settings" method="POST">
+
+        <hr><br>
+
+        <div class="setting-group">
+            <input type="checkbox" id="enableFace">
+            <label for="enableFace"><strong>Enable AI Face Detection</strong></label>
+        </div>
+
+        <div class="setting-group">
+            <input type="checkbox" id="preventTab">
+            <label for="preventTab"><strong>Anti-Tab Switching</strong></label>
+        </div>
+
+        <div class="setting-group">
+            <label><strong>Test Duration(Minutes):</strong></label>
+            <input type="number" id="testDuration" value="30" style="width: 60px;">
+        </div>
+
+        <div class="setting-group" style="display: none;">
+            <label><strong>Photo Capture Every:</strong></label>
+            <select id="photoInterval">
+                <option value="5">5 Seconds</option>
+                <option value="10">10 Seconds</option>
+                <option value="30">30 Seconds</option>
+            </select>
+        </div>
+
+        <br>
+    <button type="submit" id="saveSettingsBtn">Save Configuration</button>
+</form>
+</section>
+    
+
+        </main>
 </body>
-
+<script src="js/teacher_dashboard.js"></script>
 </html>

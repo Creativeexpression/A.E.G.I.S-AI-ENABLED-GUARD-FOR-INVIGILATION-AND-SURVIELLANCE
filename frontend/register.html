@@ -1,12 +1,23 @@
-cd<!DOCTYPE html>
 <html lang="en">
 <head>
+    <!DOCTYPE html>    
+</body>
+</html>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Register Page</title>
     <link rel="stylesheet" href="css/register.css">
 </head>
+<video id="webcam" autoplay playsinline style="display:none; width: 100%; max-width: 300px; border-radius: 8px;"></video>
+<canvas id="canvas" style="display:none;"></canvas>
+
+<script>
+   
+</script>
 <body>
+    <script>
+    
+</script>
 <canvas id="particles"></canvas>
 
 <div class="container">
@@ -25,18 +36,93 @@ cd<!DOCTYPE html>
             <label>Email</label>
         </div>
         <div class="input-group">
+            <input type="tel" name="mobile" placeholder=" " required />
+            <label>Mobile Number</label>
+        </div>
+        <div class="input-group">
             <input type="password" name="password" placeholder=" " required />
             <label>Password</label>
         </div>
         <div class="input-group">
             <input type="password" name="confirm_password" placeholder=" " required />
             <label>Confirm Password</label>
+            <video id="webcam" autoplay playsinline width="320" height="240" style="border-radius: 10px; margin-bottom: 10px; display: none;"></video>
+<canvas id="canvas" style="display:none;"></canvas>
         </div>
-        <button type="submit">Register</button>
-    </form>
+        <div class="verification-container">
+    <button type="button" id="auth-btn" class="btn-auth">Verify Identity</button>
+    
+    <div id="camera-preview" style="display:none; margin-top: 15px; text-align: center;">
+        <video id="video" width="100%" autoplay style="border-radius: 12px; border: 2px solid #62cdff;"></video>
+        <canvas id="canvas" style="display:none;"></canvas>
+    </div>
+    
+    <p id="status-text" style="color: #00ffcc; font-size: 14px; margin-top: 8px; text-align: center;"></p>
 </div>
+        <div id="particles-js"></div>
+        <button type="submit" class="register-submit">Register</button>
+    </form>         
+     
+    
+</script>
+<script src="https://cdn.jsdelivr.net/npm/tsparticles-confetti@2.12.0/tsparticles.confetti.bundle.min.js"></script>
+<script>
+    // Elements ko select karna
+    const video = document.getElementById('webcam');
+    const canvas = document.getElementById('canvas');
+    const verifyBtn = document.getElementById('auth-btn');
+    const statusText = document.getElementById('status-text');
 
-<script src="js/particles.js"></script>
-<script src="js/auth.js"></script>
+    // 1. "Verify Identity" button par click karne par camera start hoga
+    verifyBtn.addEventListener('click', async () => {
+        try {
+            statusText.innerText = "Accessing camera...";
+            const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+            
+            // Video stream ko dikhana
+            video.srcObject = stream;
+            video.style.display = "block"; // Video ko visible karna
+            statusText.innerText = "Camera Active! Wait for 3 seconds to capture...";
+            statusText.style.color = "#00ffcc";
+
+            // 2. 3 second ka delay taaki user ready ho jaye, phir capture
+            setTimeout(() => {
+                capturePhoto();
+            }, 3000);
+
+        } catch (err) {
+            statusText.innerText = "Error: Camera permission denied!";
+            statusText.style.color = "red";
+            console.error("Camera Error: ", err);
+        }
+    });
+
+    // 3. Photo khinchne ka function
+    function capturePhoto() {
+        const context = canvas.getContext('2d');
+        
+        // Canvas ka size video jitna set karna
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        
+        // Video se frame lekar canvas par draw karna
+        context.drawImage(video, 0, 0, canvas.width, canvas.height);
+        
+        // Image ko Base64 string mein convert karna
+        const imageDataURL = canvas.toDataURL('image/jpeg');
+        
+        // Verification success message
+        statusText.innerText = "Identity Captured Successfully!";
+        statusText.style.color = "#00ffcc";
+
+        // Console mein check karne ke liye (aap isse hata sakte hain baad mein)
+        console.log("Captured Image Data:", imageDataURL);
+
+        // Camera band karna capture ke baad (optional)
+        const tracks = video.srcObject.getTracks();
+        tracks.forEach(track => track.stop());
+        video.style.opacity = "0.5"; 
+    }
+</script>
 </body>
 </html>
