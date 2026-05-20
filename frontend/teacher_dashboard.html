@@ -125,14 +125,15 @@
     <h1>Scorecard</h1>
 
     <!-- Scorecard content will be dynamically populated -->
-    <div class="stats-cards">
-        <div class="card">Total Students: 0</div>
-        <div class="card">Average Score: 0%</div>
-        <div class="card">Highest Score: 0%</div>
-        <div class="card">Lowest Score: 0%</div>
-        <div class="card">Passed: 0</div>
-        <div class="card">Failed: 0</div>
-        <div class="card">Cheating Flags: 0</div>
+    <div class="stats-cards" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 2rem;">
+        <div class="card">Total Students: <span id="card-total">0</span></div>
+        <div class="card">Average Score: <span id="card-avg">0%</span></div>
+        <div class="card">Highest Score: <span id="card-high">0%</span></div>
+        <div class="card">Lowest Score: <span id="card-low">0%</span></div>
+        <div class="card">Passed: <span id="card-passed">0</span></div>
+        <div class="card">Failed: <span id="card-failed">0</span></div>
+        <div class="card">Cheating Flags: <span id="card-flags">0</span></div>
+    </div>
 
         <!--Table Panel-->
         <div class="panel">

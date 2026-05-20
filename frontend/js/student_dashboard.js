@@ -37,143 +37,145 @@ function initBackground() {
 initBackground();
 window.onresize = () => { canvas.width = window.innerWidth; canvas.height = window.innerHeight; };
 
-/* ---------- UPDATED DASHBOARD LOGIC ---------- */
-document.addEventListener("DOMContentLoaded", () => {
-const studentData = JSON.parse(localStorage.getItem("studentData") || '{}');
-const savedName = studentData.name || "User";
-    const headerElement = document.getElementById("student-name-header");
-    
-    // 1. Typing Effect Logic
-    let i = 0;
-    const speed = 100; // Speed in milliseconds
-    headerElement.innerText = ""; // Start empty for typing
+/* ---------- DYNAMIC DASHBOARD LOGIC (BACKEND CONNECTED) ---------- */
+const API_BASE_URL = "http://127.0.0.1:5000";
 
-    function typeWriter() {
-        if (i < savedName.length) {
-            headerElement.innerText += savedName.charAt(i);
-            i++;
-            setTimeout(typeWriter, speed);
-        }
+document.addEventListener("DOMContentLoaded", async () => {
+    const localData = JSON.parse(localStorage.getItem("studentData") || "{}");
+    if (!localData.email) {
+        alert("Session expired. Please log in first.");
+        window.location.href = "login.html";
+        return;
     }
-    
-    // Start typing after a brief delay
-    setTimeout(typeWriter, 500);
+
+    // Try to fetch latest student data dynamically from the database
+    let studentName = localData.name || "User";
+    let score = localData.score || 0.0;
+    let percentage = localData.percentage || 0.0;
+    let detectObject = localData.detect_object || null;
+
+    try {
+        const response = await fetch(`${API_BASE_URL}/student/${localData.email}`);
+        if (response.ok) {
+            const freshData = await response.json();
+            
+            // Save fresh data back to localStorage
+            localStorage.setItem("studentData", JSON.stringify(freshData));
+            
+            studentName = freshData.name;
+            score = freshData.score;
+            percentage = freshData.percentage;
+            detectObject = freshData.detect_object;
+        }
+    } catch (err) {
+        console.warn("Could not fetch fresh student data from backend, using cached local data instead.", err);
+    }
+
+    // 1. Welcome Typing Effect
+    const headerElement = document.getElementById("student-name-header");
+    if (headerElement) {
+        let i = 0;
+        const speed = 100;
+        headerElement.innerText = "";
+        function typeWriter() {
+            if (i < studentName.length) {
+                headerElement.innerText += studentName.charAt(i);
+                i++;
+                setTimeout(typeWriter, speed);
+            }
+        }
+        setTimeout(typeWriter, 500);
+    }
 
     // 2. Set Profile Initial
-    document.getElementById("profile-initial").innerText = savedName.charAt(0).toUpperCase();
+    const profileInitial = document.getElementById("profile-initial");
+    if (profileInitial) {
+        profileInitial.innerText = studentName.charAt(0).toUpperCase();
+    }
 
-    //Set Profile Initial (First letter)
+    // 3. Populate dynamic stats in stats-grid
+    const scoreElem = document.getElementById("stat-score");
+    const percentElem = document.getElementById("stat-percentage");
+    const proctorElem = document.getElementById("stat-proctor");
 
-    const initial = savedName.charAt(0).toUpperCase();
-
-    document.getElementById("profile-initial").innerText = initial;
-
-
+    if (scoreElem) scoreElem.innerText = `${Number(score).toFixed(1)} / 100`;
+    if (percentElem) percentElem.innerText = `${Number(percentage).toFixed(1)}%`;
+    
+    if (proctorElem) {
+        if (detectObject) {
+            proctorElem.innerText = `Anomaly: ${detectObject}`;
+            proctorElem.style.color = "#ff4b4b"; // Alert red
+        } else {
+            proctorElem.innerText = "Verified Secure";
+            proctorElem.style.color = "#22c55e"; // Success green
+        }
+    }
 
     // Dropdown Toggle Logic
-
     const trigger = document.getElementById('profileTrigger');
-
     const menu = document.getElementById('profileMenu');
 
+    if (trigger && menu) {
+        trigger.addEventListener('click', (e) => {
+            e.stopPropagation();
+            menu.classList.toggle('active');
+        });
 
-
-    trigger.addEventListener('click', (e) => {
-
-        e.stopPropagation();
-
-        menu.classList.toggle('active');
-
-    });
-
-
-
-    // Close dropdown when clicking anywhere else
-
-    document.addEventListener('click', () => {
-
-        menu.classList.remove('active');
-
-    });
-
+        document.addEventListener('click', () => {
+            menu.classList.remove('active');
+        });
+    }
 });
 
-    
-
-
 /* ---------- HARDWARE & MODAL LOGIC ---------- */
+let activeStream = null;
 
 async function checkHardware(examId) {
-
     const modal = document.getElementById('cameraModal');
-
     const video = document.getElementById('preview');
-
     const startBtn = document.getElementById('confirmStart');
 
-   
+    if (!modal || !video || !startBtn) return;
 
     modal.style.display = 'block';
 
-
-
     try {
-
-        const stream = await navigator.mediaDevices.getUserMedia({
-
+        activeStream = await navigator.mediaDevices.getUserMedia({
             video: true,
-
             audio: true
-
         });
-
        
-
-        video.srcObject = stream;
-
+        video.srcObject = activeStream;
         startBtn.disabled = false;
-
        
-
         startBtn.onclick = () => {
-
-            stream.getTracks().forEach(track => track.stop());
-
-            alert("🔒 Secure Session Initiated for: " + examId);
-
+            if (activeStream) {
+                activeStream.getTracks().forEach(track => track.stop());
+            }
+            modal.style.display = 'none';
+            // Redirect to the exam page
+            window.location.href = "exam_page.html";
         };
 
     } catch (err) {
-
         alert("Access Denied: Camera and Microphone are mandatory for this proctored portal.");
-
         modal.style.display = 'none';
-
     }
-
 }
 
-
-
-document.getElementById('cancelCheck').addEventListener('click', () => {
-
-    document.getElementById('cameraModal').style.display = 'none';
-
-    const video = document.getElementById('preview');
-
-    if (video.srcObject) video.srcObject.getTracks().forEach(t => t.stop());
-
-});
-
-
-
-window.addEventListener("resize", () => {
-
-    canvas.width = window.innerWidth;
-
-    canvas.height = window.innerHeight;
-
-});
+const cancelCheckBtn = document.getElementById('cancelCheck');
+if (cancelCheckBtn) {
+    cancelCheckBtn.addEventListener('click', () => {
+        document.getElementById('cameraModal').style.display = 'none';
+        const video = document.getElementById('preview');
+        if (video && video.srcObject) {
+            video.srcObject.getTracks().forEach(t => t.stop());
+        }
+        if (activeStream) {
+            activeStream.getTracks().forEach(t => t.stop());
+        }
+    });
+}
 
 /* ---------- NOTIFICATION SIDEBAR LOGIC ---------- */
 const closeNotif = document.getElementById('closeNotif');
@@ -181,29 +183,28 @@ const notifTrigger = document.getElementById('notifTrigger');
 const notifSidebar = document.getElementById('notifSidebar');
 const notifBadge = document.querySelector('.notification-badge');
 
-notifTrigger.addEventListener('click', (e) => {
-    e.stopPropagation();
-    notifSidebar.classList.add('active');
-        
-    // Remove the red dot when opened
-    if (notifBadge) {
+if (notifTrigger && notifSidebar) {
+    notifTrigger.addEventListener('click', (e) => {
+        e.stopPropagation();
+        notifSidebar.classList.add('active');
+            
+        // Remove the red dot when opened
+        if (notifBadge) {
             notifBadge.style.display = 'none';
-    }
-});
-// Open Sidebar
-notifTrigger.addEventListener('click', (e) => {
-    e.stopPropagation();
-    notifSidebar.classList.add('active');
-});
+        }
+    });
 
-// Close Sidebar via X button
-closeNotif.addEventListener('click', () => {
-    notifSidebar.classList.remove('active');
-});
-
-// Close Sidebar if clicking outside
-document.addEventListener('click', (e) => {
-    if (!notifSidebar.contains(e.target) && e.target !== notifTrigger) {
-        notifSidebar.classList.remove('active');
+    // Close Sidebar via X button
+    if (closeNotif) {
+        closeNotif.addEventListener('click', () => {
+            notifSidebar.classList.remove('active');
+        });
     }
-});
+
+    // Close Sidebar if clicking outside
+    document.addEventListener('click', (e) => {
+        if (!notifSidebar.contains(e.target) && e.target !== notifTrigger) {
+            notifSidebar.classList.remove('active');
+        }
+    });
+}

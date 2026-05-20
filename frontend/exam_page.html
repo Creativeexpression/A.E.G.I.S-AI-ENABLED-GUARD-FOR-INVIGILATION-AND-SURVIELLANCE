@@ -46,18 +46,55 @@
 
 <script>
 
-/* STRUCTURE (Backend will replace this) */
+/* STRUCTURE (Backend-connected Proctored Quiz) */
 
 let sections = [
-{
-name: "Section 1",
-questions: []
-},
-{
-name: "Section 2",
-questions: []
-}
-]
+    {
+        name: "AI & Cybersecurity Basics",
+        questions: [
+            {
+                text: "What does HTTPS stand for?",
+                options: [
+                    "Hypertext Transfer Protocol Standard",
+                    "Hypertext Transfer Protocol Secure",
+                    "Hypertext Transfer Process Secure",
+                    "Hypertext Technology Protocol Safe"
+                ],
+                correctIndex: 1
+            },
+            {
+                text: "Which port does SSH run on by default?",
+                options: ["80", "443", "22", "21"],
+                correctIndex: 2
+            },
+            {
+                text: "What is the main purpose of multi-factor authentication (MFA)?",
+                options: [
+                    "Faster login convenience",
+                    "To encrypt the local physical hard drive",
+                    "To add multiple layers of authentication verification",
+                    "To increase internet routing speeds"
+                ],
+                correctIndex: 2
+            },
+            {
+                text: "What is the term for an attempt to steal credentials by sending malicious emails disguised as trustworthy entities?",
+                options: ["Phishing", "Ransomware", "SQL Injection", "Distributed Denial of Service (DDoS)"],
+                correctIndex: 0
+            },
+            {
+                text: "Which neural network architecture is primarily used in proctoring systems for computer vision facial verification?",
+                options: [
+                    "Recurrent Neural Networks (RNN)",
+                    "Convolutional Neural Networks (CNN)",
+                    "Generative Adversarial Networks (GAN)",
+                    "Long Short-Term Memory Networks (LSTM)"
+                ],
+                correctIndex: 1
+            }
+        ]
+    }
+];
 
 let currentSection = 0
 let currentQuestion = 0
@@ -117,10 +154,10 @@ q.options.forEach((opt,i)=>{
 let checked = answers[key] === i ? "checked" : ""
 
 html += `
-<label>
+<label style="display: block; margin: 10px 0; cursor: pointer;">
 <input type="radio" name="option" ${checked} onclick="selectOption(${i})">
 ${opt}
-</label><br>
+</label>
 `
 
 })
@@ -206,7 +243,7 @@ if(review[key]) status += "[Review] "
 if(visited[key]) status += "[Visited] "
 
 html += `
-<div>
+<div style="display: inline-block; margin-right: 15px;">
 <button onclick="jump(${i})">Q${i+1}</button> ${status}
 </div>
 `
@@ -264,43 +301,103 @@ document.getElementById("progressText").innerText =
 
 let time = 600
 
-setInterval(()=>{
+let timerInterval = setInterval(()=>{
 
 let min = Math.floor(time/60)
 let sec = time % 60
 
-document.getElementById("timer").innerText = `${min}:${sec}`
+document.getElementById("timer").innerText = `${min}:${sec < 10 ? '0' : ''}${sec}`
 
 time--
 
 if(time <= 0){
+clearInterval(timerInterval)
 submitExam()
 }
 
 },1000)
 
-/* SUBMIT */
+/* SUBMIT EXAM TO BACKEND */
 
 function submitExam(){
 
 let total = 0
+let correctCount = 0
 let answeredCount = 0
 
 sections.forEach((sec,si)=>{
 sec.questions.forEach((q,qi)=>{
 let key = `${si}_${qi}`
 total++
-if(answers[key] !== undefined) answeredCount++
+if(answers[key] !== undefined) {
+    answeredCount++
+    if(answers[key] === q.correctIndex) {
+        correctCount++
+    }
+}
 })
 })
 
 let confirmSubmit = confirm(
-`Answered ${answeredCount}/${total}. Submit exam?`
+`You answered ${answeredCount}/${total} questions. Are you sure you want to submit the exam?`
 )
 
-if(confirmSubmit){
-alert("Exam submitted")
+if(!confirmSubmit) return;
+
+clearInterval(timerInterval);
+
+// Calculate score and accuracy percentage out of 100
+let score = (correctCount / total) * 100
+let percentage = (correctCount / total) * 100
+
+// Get student details from localStorage
+const studentData = JSON.parse(localStorage.getItem("studentData") || "{}")
+const student_id = studentData.student_id
+
+if(!student_id) {
+    alert("Error: Student session not found. Please log in again.")
+    window.location.href = "login.html"
+    return
 }
+
+// Proctoring anomaly simulation
+let tabSwitchCount = parseInt(localStorage.getItem("tabSwitchCount") || "0")
+let detect_object = null
+if (tabSwitchCount >= 2) {
+    detect_object = "Cell phone" // Simulate that a mobile device was detected during tab switches
+}
+
+// Make network request to save grade
+fetch("http://127.0.0.1:5000/update_score", {
+    method: "POST",
+    headers: {
+        "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+        student_id: student_id,
+        score: score,
+        percentage: percentage,
+        detect_object: detect_object
+    })
+})
+.then(response => {
+    if (!response.ok) {
+        throw new Error("Server responded with error status");
+    }
+    return response.json();
+})
+.then(data => {
+    alert(`Exam Submitted successfully!\nScore: ${score.toFixed(1)}/100\nAccuracy: ${percentage.toFixed(1)}%${detect_object ? '\nProctoring Alert: Anomaly recorded!' : ''}`);
+    // Clear quiz state from browser
+    localStorage.removeItem("answers")
+    localStorage.removeItem("review")
+    localStorage.removeItem("tabSwitchCount")
+    window.location.href = "student_dashboard.html"
+})
+.catch(err => {
+    console.error("Submit Error:", err);
+    alert("Failed to submit score to the backend server. Make sure the backend is active at http://127.0.0.1:5000.");
+});
 
 }
 
@@ -317,7 +414,6 @@ if(answers[key] === undefined){
 currentSection = si
 currentQuestion = qi
 renderSection()
-return
 }
 
 }
@@ -325,11 +421,14 @@ return
 
 }
 
-/* SECURITY */
+/* SECURITY & PROCTORING */
 
 document.addEventListener("visibilitychange", ()=>{
 if(document.hidden){
-alert("Warning: Tab switch detected!")
+    let count = parseInt(localStorage.getItem("tabSwitchCount") || "0")
+    count++
+    localStorage.setItem("tabSwitchCount", count)
+    alert(`Warning: Proctoring engine detected a tab switch! (Violation ${count})`)
 }
 })
 
