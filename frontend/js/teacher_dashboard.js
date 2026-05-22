@@ -18,14 +18,13 @@ document.addEventListener("DOMContentLoaded", function () {
         });
     });
 
-    // ================= DYNAMIC DATA LOADING (BACKEND) =================
     async function loadBackendStats() {
         try {
             const response = await fetch(`${API_BASE_URL}/students`);
             if (!response.ok) throw new Error("Failed to fetch students data");
 
             const students = await response.json();
-            
+
             // 1. Calculate General Dashboard Metrics
             const total = students.length;
             const live = students.filter(s => s.score === 0).length; // Active/not finished
