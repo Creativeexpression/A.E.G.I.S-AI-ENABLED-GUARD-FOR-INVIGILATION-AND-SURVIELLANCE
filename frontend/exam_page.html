@@ -5,6 +5,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Exam Page</title>
+<script src="https://unpkg.com/face-api.js@0.22.2/dist/face-api.min.js"></script>
 </head>
 
 <body>
@@ -14,6 +15,12 @@
 <p id="sectionTitle">Section: Loading...</p>
 <p id="progressText">Progress: 0/0</p>
 <p id="timer">10:00</p>
+
+<div style="margin: 12px 0; padding: 10px; border: 1px solid #ccc; max-width: 360px;">
+    <div style="font-weight: 600; margin-bottom: 6px;">Face Monitor</div>
+    <video id="faceVideo" width="320" height="240" autoplay muted playsinline style="background: #000;"></video>
+    <div id="faceStatus" style="margin-top: 6px;">Face detected: false (waiting)</div>
+</div>
 
 <hr>
 
@@ -102,6 +109,13 @@ let currentQuestion = 0
 let answers = JSON.parse(localStorage.getItem("answers")) || {}
 let review = JSON.parse(localStorage.getItem("review")) || {}
 let visited = {}
+
+let faceStream = null
+let faceTrackingActive = false
+let lastFaceLogAt = 0
+const FACE_MODEL_URL = "/models"
+const FACE_DETECTION_INTERVAL_MS = 2000
+const FACE_LOG_INTERVAL_MS = 5000
 
 /* SAVE */
 
@@ -344,6 +358,8 @@ let confirmSubmit = confirm(
 
 if(!confirmSubmit) return;
 
+stopFaceTracking()
+
 clearInterval(timerInterval);
 
 // Calculate score and accuracy percentage out of 100
@@ -434,10 +450,102 @@ if(document.hidden){
 
 document.addEventListener("contextmenu", e => e.preventDefault())
 
+/* FACE DETECTION */
+
+async function startFaceTracking(){
+    const statusEl = document.getElementById("faceStatus")
+    const videoEl = document.getElementById("faceVideo")
+
+    try {
+        await faceapi.nets.tinyFaceDetector.loadFromUri(FACE_MODEL_URL)
+    } catch (err) {
+        console.error("Model load error:", err)
+        statusEl.innerText = "Face detected: false (models missing)"
+        return
+    }
+
+    try {
+        faceStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" }, audio: false })
+        videoEl.srcObject = faceStream
+        await videoEl.play()
+        faceTrackingActive = true
+        runFaceDetectionLoop()
+    } catch (err) {
+        console.error("Camera error:", err)
+        statusEl.innerText = "Face detected: false (camera blocked)"
+    }
+}
+
+function stopFaceTracking(){
+    faceTrackingActive = false
+    if (faceStream) {
+        faceStream.getTracks().forEach(track => track.stop())
+        faceStream = null
+    }
+}
+
+function updateFaceStatus(faceCount){
+    const statusEl = document.getElementById("faceStatus")
+    const faceDetected = faceCount > 0
+    let label = "No face"
+    if (faceCount === 1) {
+        label = "One face"
+    } else if (faceCount > 1) {
+        label = "Multiple faces"
+    }
+    statusEl.innerText = `Face detected: ${faceDetected ? "true" : "false"} (${label})`
+}
+
+function logFaceStatus(faceCount){
+    const now = Date.now()
+    if (now - lastFaceLogAt < FACE_LOG_INTERVAL_MS) {
+        return
+    }
+    lastFaceLogAt = now
+
+    const studentData = JSON.parse(localStorage.getItem("studentData") || "{}")
+    const student_id = studentData.student_id || null
+
+    fetch("http://127.0.0.1:5000/api/face-log", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+            timestamp: new Date().toISOString(),
+            student_id: student_id,
+            face_status: faceCount > 0,
+            face_count: faceCount
+        })
+    }).catch(err => {
+        console.error("Face log error:", err)
+    })
+}
+
+async function runFaceDetectionLoop(){
+    if (!faceTrackingActive) return
+
+    const videoEl = document.getElementById("faceVideo")
+    try {
+        const detections = await faceapi.detectAllFaces(
+            videoEl,
+            new faceapi.TinyFaceDetectorOptions()
+        )
+        const faceCount = detections.length
+        updateFaceStatus(faceCount)
+        logFaceStatus(faceCount)
+    } catch (err) {
+        console.error("Face detection error:", err)
+    }
+
+    setTimeout(runFaceDetectionLoop, FACE_DETECTION_INTERVAL_MS)
+}
+
 /* INIT */
 
 renderSections()
 renderSection()
+startFaceTracking()
 
 </script>
 
